@@ -1,0 +1,10 @@
+{
+  "name": "mindful-claude",
+  "version": "2.0.0",
+  "description": "Guided breathing exercises above the prompt while Claude works: coherent, box, 4-7-8 and the physiological sigh, four animation styles, and the spinner reads the breath. Appears when Claude starts, disappears when Claude answers. Needs function hooks (early access) and an interactive terminal.",
+  "author": { "name": "Anthony" },
+  "homepage": "https://github.com/halluton/Mindful-Claude",
+  "repository": "https://github.com/halluton/Mindful-Claude",
+  "license": "MIT",
+  "keywords": ["breathing", "mindfulness", "hrv", "focus", "terminal", "tui", "function-hooks", "mod"]
+}

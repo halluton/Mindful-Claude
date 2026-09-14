@@ -1,157 +1,142 @@
-# Mindful Breathing for Claude Code
+# Mindful Claude
 
-Every prompt you send to Claude gives you 10-60+ seconds of dead time. Stop wasting it.
+Breathe while Claude works.
 
-This extension turns Claude's thinking time into guided breathing exercises. It auto-launches in your terminal when Claude starts working and disappears when it's done. You stay in flow, your nervous system gets a workout, and you never leave your terminal.
+Every prompt you send gives you 10 to 60+ seconds of dead time. Most of us reach for the phone. This Claude Mod turns that time into a guided breathing exercise: the moment Claude starts working, a breathing animation appears above the prompt and the spinner counts the breath with you. The moment Claude answers, it is gone.
+
+![Mindful Claude demo](demo.gif)
+
+```
+⏺ Running 2 shell commands…
+✻ Breathe in 4s… (16s · ↓ 843 tokens · thinking)
+
+                    ░▒▓████▓▒░
+          ░▒▓████████████████████▓▒░
+    ░▒▓████████████████████████████████▓▒░
+          ░▒▓████████████████████▓▒░
+                    ░▒▓████▓▒░
+                 Breathe in... 4s
+                Coherent Breathing
+──────────────────────────────────────────
+❯
+```
 
 ## Why
 
-Slow, structured breathing at ~5.5 breaths per minute increases heart rate variability (HRV), a key biomarker of stress resilience and cardiovascular health. Even brief sessions reduce cortisol and sharpen focus. Every prompt becomes a micro-session for your nervous system.
+Slow, structured breathing at about 5.5 breaths per minute raises heart rate variability (HRV), a marker of stress resilience. Even short sessions lower cortisol and sharpen focus. Every Claude turn becomes a micro-session for your nervous system, and you never leave the terminal.
 
-## What You Get
+## What you get
 
-- **4 breathing exercises** (see below)
-- **4 animation styles**: Pulse (gradient bars), Ripples (concentric lines), Dots (scattered particles), Wave (bell curve)
-- **Auto-launch**: Breathing starts after a configurable delay (default 5s) when Claude is working
-- **Auto-dismiss**: Animation closes the moment Claude finishes
-- **Non-blocking**: Opens in a tmux pane below your session, doesn't steal focus
+- **Auto-launch, auto-dismiss.** The band appears when a turn starts and disappears when it ends. Nothing to open, nothing to close.
+- **The spinner breathes too.** `Lollygagging…` becomes `Breathe in 4s…`, so the countdown is in your eye line even when you are reading tool output.
+- **4 exercises**: Coherent Breathing, Physiological Sigh, Box Breathing, 4-7-8.
+- **4 animation styles**, picked at random per turn: Pulse, Ripples, Dots, Wave.
+- **Zero tokens.** The mod draws everything itself. The model never sees it.
+- **No tmux, no jq, no settings surgery.** Two commands to install.
 
-## Demo
+## Requirements
 
-![Mindful Breathing demo](demo.gif)
+- Claude Code 2.1.269 or later, with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` set. Claude Mods are in early access, so the flag is needed until they ship by default.
+- An interactive terminal session. Nothing draws in `claude -p`, the desktop app or mobile yet.
+- A font with block and box-drawing characters. Any modern terminal is fine.
 
-## Quick Start
+## Quick start
 
-Requires **tmux**. macOS and Linux only.
+1. Turn function hooks on. Add this to `~/.claude/settings.json` (create the file, or merge the `env` key into what is there):
 
-```bash
-# Install tmux if you don't have it
-brew install tmux    # macOS
-# apt install tmux   # Linux
+   ```json
+   {
+     "env": {
+       "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
+     }
+   }
+   ```
 
-git clone https://github.com/halluton/Mindful-Claude.git
+   For a single session instead, prefix the command: `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude`.
+
+2. Install from GitHub. The repo is its own marketplace:
+
+   ```sh
+   claude plugin marketplace add halluton/Mindful-Claude
+   claude plugin install mindful-claude@mindful-claude
+   ```
+
+3. Start `claude` and send a prompt. Breathe.
+
+To try it without installing, or to hack on it:
+
+```sh
+git clone https://github.com/halluton/Mindful-Claude
 cd Mindful-Claude
-./install.sh
+claude --plugin-dir .
 ```
 
-The installer adds hooks to `~/.claude/settings.json`, creates a config at `~/.claude/mindful/config`, and installs the `/mindful` slash command. Requires `jq`.
+The repo's own `.claude/settings.json` sets the flag for sessions started inside the folder.
 
-Start a Claude Code session inside tmux and the breathing animation will appear automatically.
+To remove it:
 
-> **Tip:** If you want mouse scrolling in tmux, add `set -g mouse on` to your `~/.tmux.conf` and reload with `tmux source-file ~/.tmux.conf`.
+```sh
+claude plugin uninstall mindful-claude
+claude plugin marketplace remove mindful-claude
+```
 
-## `/mindful` Slash Command
+## `/breathe`
 
-Type `/mindful` in any Claude Code session to view status and change settings: toggle on/off, switch exercise, or adjust the delay.
+Settings live in one slash command and persist across sessions.
+
+| Command | What it does |
+|---|---|
+| `/breathe` | Show the current settings |
+| `/breathe off` / `/breathe on` | Hide or show the band |
+| `/breathe hrv` | Coherent Breathing: 5.5s in, 5.5s out |
+| `/breathe sigh` | Physiological Sigh: double inhale, long exhale |
+| `/breathe box` | Box Breathing: 4s in, 4s hold, 4s out, 4s hold |
+| `/breathe 478` | 4-7-8 Breathing: 4s in, 7s hold, 8s out |
+| `/breathe style wave` | Pin a style: `pulse`, `ripples`, `dots`, `wave`, or `random` |
+| `/breathe delay 5` | Wait this many seconds into a turn before showing the band (default 0) |
+| `/breathe spinner off` | Leave the spinner alone |
+
+Every form runs straight away, even while Claude is working.
 
 ### Exercises
 
-| Exercise | Pattern | Best For |
+| Exercise | Pattern | Best for |
 |---|---|---|
 | **Coherent Breathing** | 5.5s in / 5.5s out | Sustained HRV improvement |
 | **Physiological Sigh** | Double inhale / long exhale | Quick calm-down |
 | **Box Breathing** | 4s in / 4s hold / 4s out / 4s hold | Focus and concentration |
 | **4-7-8 Breathing** | 4s in / 7s hold / 8s out | Deep relaxation |
 
-## How It Works
+## How it works
 
-```
-You send a prompt to Claude Code
-         |
-         v
-    on-start.sh fires
-    |-- Checks ~/.claude/mindful/config, exits if disabled
-    |-- Creates marker file /tmp/mindful-claude-working
-    '-- Launches open-tmux-popup.sh in background
-         |
-         v
-    open-tmux-popup.sh waits 5 seconds
-    |-- If Claude is still working: opens breathe.sh in a tmux pane
-    '-- If Claude already finished: exits silently
-         |
-         v
-    Claude finishes, on-stop.sh fires
-    |-- Removes marker file
-    '-- Kills the breathing pane
+This is a [Claude Mod](https://github.com/anthropics/claude-code/issues/91870): a plugin whose behaviour is a TypeScript hooks module running inside Claude Code, not shell commands.
+
+- `hooks/register.tsx` is the hooks module. It hooks `ui.render` for the `AbovePrompt` band and mounts the animation while the band's `isWorking` prop is true, so the engine itself decides when the band appears and disappears. It hooks `ui.render` for the `Spinner` to rewrite its word with the current phase, registers `/breathe`, and keeps settings in `$.store`.
+- `hooks/breathe.tsx` is the surface module: the animation. It runs on the drawing thread with its own frame clock, ten frames a second, and posts the phase back to the hooks module once a second so the spinner stays in step.
+- `hooks/breath/*.ts` hold the exercises, the easing, the four shapes and the command parser as pure functions. `bun test` covers them.
+
+## Develop
+
+```sh
+bun test                                            # exercises, shapes, the /breathe parser
+claude plugin validate .claude-plugin/plugin.json   # lists the hooked events, $ calls and surface modules
+claude plugin validate .                            # checks the marketplace manifest
 ```
 
-## Configuration
+Type checking needs the early-access declarations: open a session in this folder with function hooks on, run `/plugin-types` (it writes the git-ignored `.claude/types/`), then:
 
-### Config File
-
-Settings are stored in `~/.claude/mindful/config`:
-
-```
-enabled=true
-exercise=0
-delay=5
+```sh
+bunx -p typescript tsc -p .
 ```
 
-### Environment Variables
+Edits hot-reload into a running `claude --plugin-dir .` session. Run with `--debug-file /tmp/mindful.log` to see what the engine refused, if anything.
 
-Environment variables override the config file. Set these in `.zshrc` or `.bashrc`:
+Two rules for surface modules, learned the hard way by [cc-arcade](https://github.com/sezaakgun/cc-arcade): never name a local variable `h` (every JSX tag compiles to a call of `h`), and write `Client` module paths as string literals.
 
-| Variable | Default | Description |
-|---|---|---|
-| `MINDFUL_TMUX_UI` | `pane` | UI mode: `pane` (non-blocking split), `popup` (centered overlay), `off` |
-| `MINDFUL_DELAY_SECONDS` | config `delay` | Seconds to wait before showing breathing animation |
+## The tmux version
 
-## Manual Installation
-
-If you don't want to use the installer, you can set it up manually. Requires **tmux**. macOS and Linux only.
-
-1. Install tmux if you don't have it:
-
-```bash
-brew install tmux    # macOS
-# apt install tmux   # Linux
-```
-
-2. Make scripts executable:
-
-```bash
-chmod +x breathe.sh set-exercise.sh hooks/*.sh
-```
-
-3. Add the hooks to your Claude Code settings. Edit `~/.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "command": "/full/path/to/hooks/on-start.sh"
-      }
-    ],
-    "Stop": [
-      {
-        "command": "/full/path/to/hooks/on-stop.sh"
-      }
-    ]
-  }
-}
-```
-
-Use full absolute paths.
-
-4. (Optional) Install the `/mindful` slash command:
-
-```bash
-mkdir -p ~/.claude/commands
-cp commands/mindful.md ~/.claude/commands/mindful.md
-```
-
-5. Change exercise from the terminal:
-
-```bash
-./set-exercise.sh hrv    # Coherent Breathing (5.5s in, 5.5s out)
-./set-exercise.sh sigh   # Physiological Sigh (double inhale + long exhale)
-./set-exercise.sh box    # Box Breathing (4s in, 4s hold, 4s out, 4s hold)
-./set-exercise.sh 478    # 4-7-8 Breathing (4s in, 7s hold, 8s out)
-```
-
-6. Start a Claude Code session inside tmux.
+The original, pure-bash version that ran in a tmux pane lives in [`legacy/`](legacy/). It still works if you cannot use function hooks yet.
 
 ## License
 
-MIT. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).
